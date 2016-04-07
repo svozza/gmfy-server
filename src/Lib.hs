@@ -30,7 +30,9 @@ type API = "login" :> ReqBody '[JSON] Login :> Post '[JSON] [String]
 startApp :: IO ()
 startApp = do
     h <- R.connect "172.17.0.2" 28015 Nothing
-    putStrLn $ show h
+    users <- RNC.run h $ RNC.table "users" :: IO (RNC.Cursor RNC.Datum)
+    c <- RNC.collect users
+    putStrLn $ show c
     run 8080 app
 
 app :: Application
@@ -40,7 +42,7 @@ api :: Proxy API
 api = Proxy
 
 postLogin _ = do
-            return ["received"]
+    return ["received"]
 
 server :: Server API
 server = postLogin
