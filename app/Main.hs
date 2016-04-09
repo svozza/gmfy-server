@@ -4,5 +4,5 @@ import Lib
 
 main :: IO ()
 main = do
-    putStrLn "Starting Server!..."
+    putStrLn "Starting Server..."
     startApp

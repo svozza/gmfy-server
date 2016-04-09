@@ -15,7 +15,9 @@ library
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , jwt
                      , rethinkdb
+                     , transformers
                      , servant-server
                      , wai
                      , warp
