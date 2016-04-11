@@ -19,14 +19,7 @@ import Servant
 import Prelude hiding (id)
 import qualified Data.Aeson.Parser
 
-data Login = Login
-  { emailAddr        :: String
-  } deriving (Eq, Show, Generic)
-
-instance ToJSON Login
-instance FromJSON Login
-
-type API = "login" :> ReqBody '[JSON] Login :> Post '[JSON] User
+type API = "login" :> ReqBody '[JSON] User :> Post '[JSON] User
 
 data User = User
     {
@@ -49,13 +42,13 @@ api :: Proxy API
 api = Proxy
 
 getUser email = do
-    h <- R.connect "172.17.0.1" 28015 Nothing
+    h <- R.connect "172.17.0.2" 28015 Nothing
     users <- RNC.run h $ RNC.table "users" RNC.# RNC.getAll "email" [RNC.str email] :: IO (RNC.Cursor User)
     c <- RNC.collect users
     return $ head c
 
-postLogin _ = do
-    liftIO $ getUser "svozza@fake.com"
+postLogin user = do
+    liftIO $ getUser (email user)
 
 server :: Server API
 server = postLogin
