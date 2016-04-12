@@ -6,10 +6,12 @@ module Lib
     ( startApp
     ) where
 
+import Control.Concurrent
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Aeson.TH
 import Data.Maybe
+import qualified Data.Text as T
 import GHC.Generics
 import Network.Wai
 import Network.Wai.Handler.Warp
@@ -18,6 +20,7 @@ import Control.Monad.Trans.Either
 import qualified Database.RethinkDB as R
 import qualified Database.RethinkDB.NoClash as RNC
 import Servant
+import Network.Mail.SMTP
 import Prelude hiding (id)
 import qualified Data.Aeson.Parser
 
@@ -26,6 +29,7 @@ type API = "login" :> ReqBody '[JSON] User :> Post '[] ()
 data User = User
     {
         id :: Maybe String,
+        name :: Maybe String,
         email :: String
     } deriving (Show, Generic)
 
@@ -52,12 +56,21 @@ getUser email = do
         []      ->  return Nothing
         (x:_)   ->  return (Just x)
 
+createEmail user = simpleMail from to cc bcc subject [body]
+    where from       = Address Nothing "email@gmfy.life"
+          to         = [Address (fmap T.pack (name user)) (T.pack $ email user)]
+          cc         = []
+          bcc        = []
+          subject    = "Login"
+          body       = plainTextPart "Here's your login token."
 
 postLogin user = do
     m <- liftIO $ getUser (email user)
     case m of
           Nothing -> left err403
-          Just x  -> right ()
+          Just x  -> do
+                        liftIO $ forkIO (renderSendMail $ createEmail user)
+                        right $ ()
 
 server :: Server API
 server = postLogin

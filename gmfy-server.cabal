@@ -20,6 +20,8 @@ library
                      , rethinkdb
                      , transformers
                      , servant-server
+                     , smtp-mail
+                     , text
                      , wai
                      , warp
   default-language:    Haskell2010
