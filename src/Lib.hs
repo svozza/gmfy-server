@@ -10,9 +10,12 @@ import Control.Concurrent
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Aeson.TH
+import qualified Data.Map as Map
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as L
 import GHC.Generics
+import qualified Web.JWT as J
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -56,13 +59,21 @@ getUser email = do
         []      ->  return Nothing
         (x:_)   ->  return (Just x)
 
+createToken :: User -> T.Text
+createToken user = J.encodeSigned J.HS256 key cs
+    where cs = J.def {
+             J.iss = J.stringOrURI "http://gmfy.life"
+           , J.unregisteredClaims = Map.fromList [("email", (toJSON $ email user)), ("name", (toJSON $ name user))]
+          }
+          key = J.secret "very-secret-key"
+
 createEmail user = simpleMail from to cc bcc subject [body]
     where from       = Address Nothing "email@gmfy.life"
           to         = [Address (fmap T.pack (name user)) (T.pack $ email user)]
           cc         = []
           bcc        = []
           subject    = "Login"
-          body       = plainTextPart "Here's your login token."
+          body       = plainTextPart $ (L.fromStrict $ createToken user)
 
 postLogin user = do
     m <- liftIO $ getUser (email user)
